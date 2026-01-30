@@ -1,52 +1,49 @@
 import sqlite3
+import os
 
-DB_PATH = "db/concerts.db"
+DB_PATH = os.path.join(os.path.dirname(__file__), 'concerts.db')
 
 def init_db():
-    """Crée la table concerts si elle n'existe pas."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
-    # On crée une table avec une contrainte UNIQUE sur l'URL
-    # Cela permet d'éviter les doublons si on scrape plusieurs fois
+    # 1. Création de la table si elle n'existe pas
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS concerts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             artist TEXT NOT NULL,
             date TEXT NOT NULL,
             venue TEXT NOT NULL,
-            city TEXT NOT NULL,
-            url TEXT UNIQUE NOT NULL
+            city TEXT,
+            url TEXT,
+            genre TEXT,
+            UNIQUE(artist, date, venue)
         )
     ''')
     
+    # 2. HACK : On force l'ajout de la colonne genre si elle manque (pour Render)
+    try:
+        cursor.execute('ALTER TABLE concerts ADD COLUMN genre TEXT')
+        print("✅ Colonne 'genre' ajoutée avec succès.")
+    except sqlite3.OperationalError:
+        # Si l'erreur est "duplicate column", c'est que c'est déjà bon
+        print("ℹ️ La colonne 'genre' existe déjà.")
+        
     conn.commit()
     conn.close()
-    print("🗄️ Base de données initialisée avec succès.")
 
 def save_concerts(concerts):
-    """Insère une liste de dictionnaires dans la base."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    
-    count = 0
     for c in concerts:
-        try:
-            cursor.execute('''
-                INSERT OR IGNORE INTO concerts (artist, date, venue, city, url)
-                VALUES (?, ?, ?, ?, ?)
-            ''', (c['artist'], c['date'], c['venue'], c['city'], c['url']))
-            if cursor.rowcount > 0:
-                count += 1
-        except Exception as e:
-            print(f"⚠️ Erreur insertion : {e}")
-            
+        cursor.execute('''
+            INSERT OR REPLACE INTO concerts (artist, date, venue, city, url, genre)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (c['artist'], c['date'], c['venue'], c.get('city', 'Toulouse'), c['url'], c.get('genre', 'Autre')))
     conn.commit()
     conn.close()
-    print(f"💾 {count} nouveaux concerts enregistrés en base.")
 
-def get_concerts_filtered(artist=None, venue=None, date_from=None, date_to=None):
-    """Récupère les concerts avec filtres optionnels (Artiste, Salle, Période)."""
+def get_concerts_filtered(artist=None, venue=None, date_from=None, date_to=None, genre=None):
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
@@ -54,30 +51,25 @@ def get_concerts_filtered(artist=None, venue=None, date_from=None, date_to=None)
     query = "SELECT * FROM concerts WHERE 1=1"
     params = []
     
-    # Filtre Artiste
     if artist:
         query += " AND artist LIKE ?"
         params.append(f"%{artist}%")
-    
-    # Filtre Salle
     if venue:
         query += " AND venue LIKE ?"
         params.append(f"%{venue}%")
-        
-    # Filtre Date Début (A partir de...)
+    if genre:
+        query += " AND genre = ?"
+        params.append(genre)
     if date_from:
         query += " AND date >= ?"
         params.append(date_from)
-
-    # Filtre Date Fin (Jusqu'à...)
     if date_to:
         query += " AND date <= ?"
         params.append(date_to)
         
     query += " ORDER BY date ASC"
-    
     cursor.execute(query, params)
     rows = cursor.fetchall()
-    concerts = [dict(row) for row in rows]
     conn.close()
-    return concerts
+    return [dict(row) for row in rows]
+

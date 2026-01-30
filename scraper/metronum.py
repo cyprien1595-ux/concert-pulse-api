@@ -1,6 +1,14 @@
 import requests
 from bs4 import BeautifulSoup
-from .utils import guess_genre
+import sys
+import os
+
+# Sécurité pour l'import sur Render
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+try:
+    from utils import guess_genre
+except ImportError:
+    from scraper.utils import guess_genre
 
 def get_metronum_concerts():
     url = "https://lemetronum.fr/programmation/"
@@ -18,11 +26,13 @@ def get_metronum_concerts():
                     "artist": artist,
                     "date": "2026-03-01", 
                     "venue": "Le Metronum",
+                    "city": "Toulouse",
                     "url": "https://lemetronum.fr/programmation/",
-                    "genre": guess_genre(artist) # Classification automatique
+                    "genre": guess_genre(artist)
                 })
         return concerts
-    except:
+    except Exception as e:
+        print(f"Erreur Metronum: {e}")
         return []
     
     
