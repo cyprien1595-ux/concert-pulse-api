@@ -19,25 +19,42 @@
     </div>
 
     <main class="max-w-6xl mx-auto px-4 py-12">
+        <div class="max-w-6xl mx-auto px-4 mt-6 flex gap-2 justify-center">
+            <button onclick="filterByVenue('')" class="text-xs bg-gray-700 px-3 py-1 rounded hover:bg-gray-600">Tous</button>
+            <button onclick="filterByVenue('Bikini')" class="text-xs bg-pink-900/30 border border-pink-500/50 px-3 py-1 rounded hover:bg-pink-500/20 text-pink-400">Le Bikini</button>
+            <button onclick="filterByVenue('Metronum')" class="text-xs bg-blue-900/30 border border-blue-500/50 px-3 py-1 rounded hover:bg-blue-500/20 text-blue-400">Le Metronum</button>
+        </div>
         <div id="concertsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <p class="text-center col-span-full animate-pulse">Chargement des concerts...</p>
         </div>
+
     </main>
 
     <script>
-        // Remplace par TON URL Render après le premier test local
+
+function filterByVenue(venueName) {
+    document.getElementById('artistInput').value = ""; 
+    const grid = document.getElementById('concertsGrid');
+    grid.innerHTML = "<p class='col-span-full text-center animate-pulse'>Chargement...</p>";
+    
+    
+    const url = venueName ? `${API_URL}?venue=${venueName}` : API_URL;
+    fetch(url).then(res => res.json()).then(data => {
+    
+        displayConcerts(data); 
+    });
+}
 const API_URL = "https://concert-pulse-api.onrender.com/concerts";
         async function loadConcerts() {
             const grid = document.getElementById('concertsGrid');
             const artist = document.getElementById('artistInput').value;
             
             try {
-                // On construit l'URL avec le filtre si présent
                 const url = artist ? `${API_URL}?artist=${artist}` : API_URL;
                 const response = await fetch(url);
                 const data = await response.json();
                 
-                grid.innerHTML = ""; // On vide la grille
+                grid.innerHTML = ""; 
 
                 if (data.concerts.length === 0) {
                     grid.innerHTML = "<p class='col-span-full text-center text-gray-500'>Aucun concert trouvé.</p>";
@@ -45,27 +62,42 @@ const API_URL = "https://concert-pulse-api.onrender.com/concerts";
                 }
 
                 data.concerts.forEach(c => {
-                    const card = `
-                        <div class="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden hover:shadow-2xl hover:shadow-pink-500/10 transition-all duration-300 group">
-                            <div class="p-6">
-                                <div class="text-pink-500 text-sm font-bold mb-2">${new Date(c.date).toLocaleDateString('fr-FR', {weekday: 'long', day: 'numeric', month: 'long'})}</div>
-                                <h3 class="text-xl font-bold mb-4 group-hover:text-pink-400 transition">${c.artist}</h3>
-                                <div class="flex items-center text-gray-400 text-sm mb-6">
-                                    <span class="mr-2">📍</span> ${c.venue}
-                                </div>
-                                <a href="${c.url}" target="_blank" class="block text-center bg-gray-700 hover:bg-pink-600 py-2 rounded-lg text-sm font-bold transition">Voir les détails</a>
-                            </div>
-                        </div>
-                    `;
-                    grid.innerHTML += card;
-                });
+
+                    const venueColor = c.venue.includes("Bikini") ? "bg-pink-500" : "bg-blue-500";
+    
+    const card = `
+        <div class="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden hover:shadow-2xl hover:shadow-pink-500/10 transition-all duration-300 group">
+            <div class="p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="text-pink-500 text-sm font-bold">
+                        ${new Date(c.date).toLocaleDateString('fr-FR', {weekday: 'long', day: 'numeric', month: 'long'})}
+                    </div>
+                    <span class="${venueColor} text-[10px] uppercase px-2 py-1 rounded-full font-extrabold text-white">
+                        ${c.venue}
+                    </span>
+                </div>
+                <h3 class="text-xl font-bold mb-4 group-hover:text-pink-400 transition min-h-[3.5rem] leading-tight">
+                    ${c.artist}
+                </h3>
+                <div class="flex items-center text-gray-400 text-sm mb-6">
+                    <span class="mr-2">📍</span> Toulouse
+                </div>
+                <a href="${c.url}" target="_blank" class="block text-center border border-gray-600 hover:bg-pink-600 hover:border-pink-600 py-2 rounded-lg text-sm font-bold transition duration-300">
+                    Réserver / Détails
+                </a>
+            </div>
+        </div>
+    `;
+    grid.innerHTML += card;
+});
+
+document.querySelector('header p').innerText = `${data.count} concerts trouvés à Toulouse`;
 
             } catch (error) {
                 grid.innerHTML = "<p class='col-span-full text-center text-red-500'>Erreur lors de la récupération des données.</p>";
             }
         }
 
-        // Chargement initial
         loadConcerts();
     </script>
 </body>
