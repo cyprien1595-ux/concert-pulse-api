@@ -11,13 +11,25 @@ app = FastAPI(title="Concert Pulse API")
 
 @app.get("/concerts")
 def read_concerts(
-    artist: Optional[str] = Query(None, description="Nom de l'artiste"),
-    venue: Optional[str] = Query(None, description="Nom de la salle")
+    artist: Optional[str] = Query(None, description="Filtrer par artiste"),
+    venue: Optional[str] = Query(None, description="Filtrer par salle"),
+    date_from: Optional[str] = Query(None, description="Depuis cette date (YYYY-MM-DD)", alias="from"),
+    date_to: Optional[str] = Query(None, description="Jusqu'à cette date (YYYY-MM-DD)", alias="to")
 ):
-    """Récupère la liste des concerts avec filtres optionnels."""
-    concerts = get_concerts_filtered(artist=artist, venue=venue)
+    """Récupère la liste des concerts avec filtres."""
+    concerts = get_concerts_filtered(
+        artist=artist, 
+        venue=venue, 
+        date_from=date_from, 
+        date_to=date_to
+    )
     return {
         "count": len(concerts),
-        "filters": {"artist": artist, "venue": venue},
+        "filters": {
+            "artist": artist, 
+            "venue": venue,
+            "from": date_from,
+            "to": date_to
+        },
         "concerts": concerts
     }

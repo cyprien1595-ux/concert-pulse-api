@@ -45,8 +45,8 @@ def save_concerts(concerts):
     conn.close()
     print(f"💾 {count} nouveaux concerts enregistrés en base.")
 
-def get_concerts_filtered(artist=None, venue=None):
-    """Récupère les concerts avec des filtres optionnels."""
+def get_concerts_filtered(artist=None, venue=None, date_from=None, date_to=None):
+    """Récupère les concerts avec filtres optionnels (Artiste, Salle, Période)."""
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
@@ -54,12 +54,25 @@ def get_concerts_filtered(artist=None, venue=None):
     query = "SELECT * FROM concerts WHERE 1=1"
     params = []
     
+    # Filtre Artiste
     if artist:
         query += " AND artist LIKE ?"
         params.append(f"%{artist}%")
+    
+    # Filtre Salle
     if venue:
         query += " AND venue LIKE ?"
         params.append(f"%{venue}%")
+        
+    # Filtre Date Début (A partir de...)
+    if date_from:
+        query += " AND date >= ?"
+        params.append(date_from)
+
+    # Filtre Date Fin (Jusqu'à...)
+    if date_to:
+        query += " AND date <= ?"
+        params.append(date_to)
         
     query += " ORDER BY date ASC"
     
