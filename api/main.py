@@ -1,3 +1,4 @@
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Query
 from typing import Optional
 import sys
@@ -10,6 +11,15 @@ from db.database import get_concerts_filtered, init_db, save_concerts
 from scraper.main import get_concerts
 
 app = FastAPI(title="Concert Pulse API")
+
+# Autoriser tout le monde (pour le dev, c'est ok)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # Autorise toutes les origines
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.on_event("startup")
 def startup_event():

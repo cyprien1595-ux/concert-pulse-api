@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Concert Pulse - Toulouse</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen font-sans">
+
+    <header class="py-10 text-center border-b border-gray-800">
+        <h1 class="text-4xl font-bold text-pink-500 mb-2">🎸 Concert Pulse</h1>
+        <p class="text-gray-400">Les prochains concerts à Toulouse (Bikini & Zénith)</p>
+    </header>
+
+    <div class="max-w-6xl mx-auto px-4 mt-8 flex flex-wrap gap-4 justify-center">
+        <input id="artistInput" type="text" placeholder="Chercher un artiste..." class="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 w-full max-w-xs focus:outline-none focus:ring-2 focus:ring-pink-500">
+        <button onclick="loadConcerts()" class="bg-pink-600 hover:bg-pink-700 px-6 py-2 rounded-lg font-bold transition">Filtrer</button>
+    </div>
+
+    <main class="max-w-6xl mx-auto px-4 py-12">
+        <div id="concertsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <p class="text-center col-span-full animate-pulse">Chargement des concerts...</p>
+        </div>
+    </main>
+
+    <script>
+        // Remplace par TON URL Render après le premier test local
+const API_URL = "https://concert-pulse-api.onrender.com/concerts";
+        async function loadConcerts() {
+            const grid = document.getElementById('concertsGrid');
+            const artist = document.getElementById('artistInput').value;
+            
+            try {
+                // On construit l'URL avec le filtre si présent
+                const url = artist ? `${API_URL}?artist=${artist}` : API_URL;
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                grid.innerHTML = ""; // On vide la grille
+
+                if (data.concerts.length === 0) {
+                    grid.innerHTML = "<p class='col-span-full text-center text-gray-500'>Aucun concert trouvé.</p>";
+                    return;
+                }
+
+                data.concerts.forEach(c => {
+                    const card = `
+                        <div class="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden hover:shadow-2xl hover:shadow-pink-500/10 transition-all duration-300 group">
+                            <div class="p-6">
+                                <div class="text-pink-500 text-sm font-bold mb-2">${new Date(c.date).toLocaleDateString('fr-FR', {weekday: 'long', day: 'numeric', month: 'long'})}</div>
+                                <h3 class="text-xl font-bold mb-4 group-hover:text-pink-400 transition">${c.artist}</h3>
+                                <div class="flex items-center text-gray-400 text-sm mb-6">
+                                    <span class="mr-2">📍</span> ${c.venue}
+                                </div>
+                                <a href="${c.url}" target="_blank" class="block text-center bg-gray-700 hover:bg-pink-600 py-2 rounded-lg text-sm font-bold transition">Voir les détails</a>
+                            </div>
+                        </div>
+                    `;
+                    grid.innerHTML += card;
+                });
+
+            } catch (error) {
+                grid.innerHTML = "<p class='col-span-full text-center text-red-500'>Erreur lors de la récupération des données.</p>";
+            }
+        }
+
+        // Chargement initial
+        loadConcerts();
+    </script>
+</body>
+</html>
