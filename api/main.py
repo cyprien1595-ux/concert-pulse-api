@@ -4,7 +4,6 @@ from typing import Optional
 import sys
 import os
 
-# Configuration du chemin pour l'accès aux modules db et scraper
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from db.database import get_concerts_filtered, init_db, save_concerts
@@ -13,13 +12,13 @@ from scraper.metronum import get_metronum_concerts
 
 app = FastAPI(title="Concert Pulse API")
 
-# Configuration CORS
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],  
+    allow_headers=["*"],  
 )
 
 @app.on_event("startup")
@@ -28,7 +27,7 @@ def startup_event():
     print("🔄 Rafraîchissement des données (Bikini + Metronum)...")
     init_db()
     
-    # On récupère les deux sources et on les fusionne dans 'all_concerts'
+
     all_concerts = get_concerts() + get_metronum_concerts()
     
     if all_concerts:
@@ -52,7 +51,7 @@ def read_concerts(
     concerts = get_concerts_filtered(
         artist=artist, 
         venue=venue, 
-        genre=genre, # <-- Ajout ici
+        genre=genre, 
         date_from=date_from, 
         date_to=date_to
     )
