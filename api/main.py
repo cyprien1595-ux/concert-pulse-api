@@ -1,6 +1,5 @@
-from scraper.metronum import get_metronum_concerts # Ajoute cet import en haut
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Query
+from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
 import sys
 import os
@@ -10,13 +9,14 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from db.database import get_concerts_filtered, init_db, save_concerts
 from scraper.main import get_concerts
+from scraper.metronum import get_metronum_concerts
 
 app = FastAPI(title="Concert Pulse API")
 
-# Autoriser tout le monde (pour le dev, c'est ok)
+# Configuration CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Autorise toutes les origines
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -24,20 +24,21 @@ app.add_middleware(
 
 @app.on_event("startup")
 def startup_event():
-    """S'exécute au démarrage du serveur : initialise la DB et actualise les données."""
-    print("🔄 Rafraîchissement des données au démarrage...")
+    """S'exécute au démarrage : initialise la DB et fusionne les sources."""
+    print("🔄 Rafraîchissement des données (Bikini + Metronum)...")
     init_db()
-    data = get_concerts() + get_metronum_concerts()
-    concerts = get_concerts()
-    if concerts:
-        save_concerts(concerts)
-        print(f"✅ Synchronisation réussie : {len(concerts)} concerts en base.")
+    
+    # On récupère les deux sources et on les fusionne dans 'all_concerts'
+    all_concerts = get_concerts() + get_metronum_concerts()
+    
+    if all_concerts:
+        save_concerts(all_concerts)
+        print(f"✅ Synchronisation réussie : {len(all_concerts)} concerts en base.")
     else:
         print("⚠️ Aucun concert récupéré au démarrage.")
 
 @app.get("/health")
 def health_check():
-    """Vérifie que l'API est en ligne."""
     return {"status": "ok", "message": "Concert Pulse API is pulsing!"}
 
 @app.get("/concerts")
@@ -47,7 +48,6 @@ def read_concerts(
     date_from: Optional[str] = Query(None, description="Depuis cette date (YYYY-MM-DD)", alias="from"),
     date_to: Optional[str] = Query(None, description="Jusqu'à cette date (YYYY-MM-DD)", alias="to")
 ):
-    """Récupère la liste des concerts avec filtres optionnels."""
     concerts = get_concerts_filtered(
         artist=artist, 
         venue=venue, 
@@ -56,11 +56,6 @@ def read_concerts(
     )
     return {
         "count": len(concerts),
-        "filters": {
-            "artist": artist, 
-            "venue": venue,
-            "from": date_from,
-            "to": date_to
-        },
+        "filters": {"artist": artist, "venue": venue, "from": date_from, "to": date_to},
         "concerts": concerts
     }
