@@ -1,21 +1,33 @@
 import sys
 import os
 
-# Toujours le même fix pour les imports
+# Ajout du chemin racine pour les imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from scraper.main import get_concerts
+from scraper.main import get_concerts as get_bikini
+from scraper.metronum import get_metronum_concerts
 from db.database import init_db, save_concerts
 
-def refresh_data():
-    print("🔄 Début de la mise à jour des données...")
+def refresh_all_data():
+    print("🔄 Début de la mise à jour globale...")
     init_db()
-    concerts = get_concerts()
-    if concerts:
-        save_concerts(concerts)
-        print("✅ Données synchronisées !")
+    
+    # 1. Scraping du Bikini
+    print("🎸 Scraping Le Bikini / Zénith...")
+    bikini_data = get_bikini()
+    
+    # 2. Scraping du Metronum
+    print("🥁 Scraping Le Metronum...")
+    metronum_data = get_metronum_concerts()
+    
+    # Fusion des listes
+    all_concerts = bikini_data + metronum_data
+    
+    if all_concerts:
+        save_concerts(all_concerts)
+        print(f"✅ Terminé ! {len(all_concerts)} concerts synchronisés au total.")
     else:
-        print("⚠️ Échec de la récupération.")
+        print("⚠️ Aucun concert trouvé aujourd'hui.")
 
 if __name__ == "__main__":
-    refresh_data()
+    refresh_all_data()

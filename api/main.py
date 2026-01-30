@@ -1,3 +1,4 @@
+from scraper.metronum import get_metronum_concerts # Ajoute cet import en haut
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Query
 from typing import Optional
@@ -26,6 +27,7 @@ def startup_event():
     """S'exécute au démarrage du serveur : initialise la DB et actualise les données."""
     print("🔄 Rafraîchissement des données au démarrage...")
     init_db()
+    data = get_concerts() + get_metronum_concerts()
     concerts = get_concerts()
     if concerts:
         save_concerts(concerts)
