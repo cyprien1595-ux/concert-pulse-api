@@ -7,7 +7,8 @@ def init_db():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
-    # 1. Création de la table si elle n'existe pas
+    cursor.execute('DROP TABLE IF EXISTS concerts')
+    
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS concerts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -20,13 +21,14 @@ def init_db():
             UNIQUE(artist, date, venue)
         )
     ''')
+    conn.commit()
+    conn.close()
+    print("✅ Base de données réinitialisée avec la colonne Genre.")
     
-    # 2. HACK : On force l'ajout de la colonne genre si elle manque (pour Render)
     try:
         cursor.execute('ALTER TABLE concerts ADD COLUMN genre TEXT')
         print("✅ Colonne 'genre' ajoutée avec succès.")
     except sqlite3.OperationalError:
-        # Si l'erreur est "duplicate column", c'est que c'est déjà bon
         print("ℹ️ La colonne 'genre' existe déjà.")
         
     conn.commit()

@@ -23,18 +23,28 @@ app.add_middleware(
 
 @app.on_event("startup")
 def startup_event():
-    """S'exécute au démarrage : initialise la DB et fusionne les sources."""
-    print("🔄 Rafraîchissement des données (Bikini + Metronum)...")
-    init_db()
+    print("🔄 Nettoyage et synchronisation...")
+    init_db() # Cela va vider la table grâce au DROP TABLE ci-dessus
     
+    try:
+        bikini = get_concerts()
+        print(f"🎸 Bikini: {len(bikini)} trouvés")
+    except Exception as e:
+        print(f"❌ Erreur Bikini: {e}")
+        bikini = []
 
-    all_concerts = get_concerts() + get_metronum_concerts()
+    try:
+        metronum = get_metronum_concerts()
+        print(f"🥁 Metronum: {len(metronum)} trouvés")
+    except Exception as e:
+        print(f"❌ Erreur Metronum: {e}")
+        metronum = []
+
+    all_concerts = bikini + metronum
     
     if all_concerts:
         save_concerts(all_concerts)
-        print(f"✅ Synchronisation réussie : {len(all_concerts)} concerts en base.")
-    else:
-        print("⚠️ Aucun concert récupéré au démarrage.")
+        print(f"✅ Total: {len(all_concerts)} concerts en base.")
 
 @app.get("/health")
 def health_check():
