@@ -1,13 +1,32 @@
-from fastapi import FastAPI, Query # J'ajoute Query ici
-from typing import Optional # Pour rendre les paramètres optionnels
+from fastapi import FastAPI, Query
+from typing import Optional
 import sys
 import os
 
-# On s'assure que Python trouve le dossier 'db'
+# Configuration du chemin pour l'accès aux modules db et scraper
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from db.database import get_concerts_filtered # On change le nom de l'import
+
+from db.database import get_concerts_filtered, init_db, save_concerts
+from scraper.main import get_concerts
 
 app = FastAPI(title="Concert Pulse API")
+
+@app.on_event("startup")
+def startup_event():
+    """S'exécute au démarrage du serveur : initialise la DB et actualise les données."""
+    print("🔄 Rafraîchissement des données au démarrage...")
+    init_db()
+    concerts = get_concerts()
+    if concerts:
+        save_concerts(concerts)
+        print(f"✅ Synchronisation réussie : {len(concerts)} concerts en base.")
+    else:
+        print("⚠️ Aucun concert récupéré au démarrage.")
+
+@app.get("/health")
+def health_check():
+    """Vérifie que l'API est en ligne."""
+    return {"status": "ok", "message": "Concert Pulse API is pulsing!"}
 
 @app.get("/concerts")
 def read_concerts(
@@ -16,7 +35,7 @@ def read_concerts(
     date_from: Optional[str] = Query(None, description="Depuis cette date (YYYY-MM-DD)", alias="from"),
     date_to: Optional[str] = Query(None, description="Jusqu'à cette date (YYYY-MM-DD)", alias="to")
 ):
-    """Récupère la liste des concerts avec filtres."""
+    """Récupère la liste des concerts avec filtres optionnels."""
     concerts = get_concerts_filtered(
         artist=artist, 
         venue=venue, 
